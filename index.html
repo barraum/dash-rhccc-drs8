@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Regulação RHCCC | Estatísticas Públicas - Ministério Público SP</title>
+  <meta name="description" content="Painel Analítico Público de Tempos de Espera, Regulação Oncológica e Cumprimento da Lei dos 60 Dias (RHCCC) - Ministério Público do Estado de São Paulo. Dados Anonimizados em Conformidade com a LGPD.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <style>
+    /* Public / LGPD Specific Accents */
+    .badge-lgpd {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .banner-lgpd {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      color: var(--text-secondary, #94a3b8);
+    }
+    [data-theme="light"] .banner-lgpd {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e3a8a;
+    }
+    .banner-lgpd strong {
+      color: var(--text-primary, #f8fafc);
+    }
+    [data-theme="light"] .banner-lgpd strong {
+      color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <div class="brand-logo-badge">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <div class="brand-info">
+          <h1>
+            Painel de Regulação RHCCC
+            <span class="badge-mpsp">Ministério Público SP</span>
+            <span class="badge-lgpd"><i data-lucide="lock" style="width: 12px; height: 12px;"></i> Dados Anonimizados / LGPD</span>
+          </h1>
+          <div class="brand-subtitle">
+            <span>Fiscalização da Lei dos 60 Dias (Lei nº 12.732/12) & Acesso Oncológico Regional</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="relatorioTecnicoBtn" class="btn" style="background: rgba(139, 92, 246, 0.18); border-color: rgba(139, 92, 246, 0.4); color: #c084fc;" title="Gerar Relatório Técnico Formal para instruir Procedimento de Acompanhamento (PAA / IC)">
+          <i data-lucide="file-text"></i>
+          <span>Relatório Técnico (PAA)</span>
+        </button>
+        <button id="themeToggleBtn" class="btn btn-icon" title="Alternar Modo Claro/Escuro">
+          <i data-lucide="sun" id="themeIcon"></i>
+        </button>
+        <button id="printBtn" class="btn" title="Exportar Relatório do Dashboard em PDF / Imprimir">
+          <i data-lucide="printer"></i>
+          <span>Imprimir Painel</span>
+        </button>
+        <button id="exportCsvBtn" class="btn btn-primary" title="Exportar tabela estatística consolidada em CSV">
+          <i data-lucide="download"></i>
+          <span>Exportar Estatísticas</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Executive Print Header (Only visible on print/PDF) -->
+  <div id="dashboardPrintHeader" class="dashboard-print-header no-screen">
+    <div class="dph-top">
+      <div class="dph-title">MINISTÉRIO PÚBLICO DO ESTADO DE SÃO PAULO</div>
+      <div class="dph-badge">PROMOTORIA DE JUSTIÇA &bull; SAÚDE PÚBLICA</div>
+    </div>
+    <div class="dph-heading">Painel de Regulação Oncológica RHCCC &bull; Fiscalização da Lei dos 60 Dias (Lei nº 12.732/12)</div>
+    <div class="dph-meta">
+      <span>Emissão: <strong id="printMetaDate"></strong></span>
+      <span>Aba: <strong id="printMetaTab">Geral</strong></span>
+      <span>Filtro de Período: <strong id="printMetaPeriod">Todos</strong></span>
+      <span>Filtro Especialidade: <strong id="printMetaSpec">Todas</strong></span>
+      <span>Metodologia: <strong>Corte &le; 180d</strong></span>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="container">
+
+    <!-- LGPD & Transparência Info Banner -->
+    <div class="banner-lgpd">
+      <i data-lucide="info" style="width: 20px; height: 20px; flex-shrink: 0; color: #3b82f6; margin-top: 1px;"></i>
+      <div>
+        <strong>Transparência Pública e Proteção de Dados (LGPD):</strong> Este painel público apresenta dados e indicadores estatísticos consolidados acerca dos tempos de regulação e cumprimento da Lei Federal nº 12.732/12 (Lei dos 60 Dias). Nenhuma informação identificadora de pacientes, laudos individualizados ou microdados sigilosos constam nesta base.
+      </div>
+    </div>
+
+    <!-- Global Filter & Control Bar -->
+    <section class="control-bar" aria-label="Filtros e Controles">
+      <div class="filters-row">
+        <!-- Period Filter -->
+        <div class="filter-group">
+          <label for="periodFilter" class="filter-label">
+            <i data-lucide="calendar"></i> Período da Consulta
+          </label>
+          <select id="periodFilter" class="filter-select">
+            <option value="ALL">Todos os Períodos (1.030 casos)</option>
+          </select>
+        </div>
+
+        <!-- Specialty Filter -->
+        <div class="filter-group">
+          <label for="specialtyFilter" class="filter-label">
+            <i data-lucide="stethoscope"></i> Especialidade
+          </label>
+          <select id="specialtyFilter" class="filter-select">
+            <option value="ALL">Todas as Especialidades</option>
+          </select>
+        </div>
+
+        <!-- Requesting Unit Filter -->
+        <div class="filter-group">
+          <label for="solicitanteFilter" class="filter-label">
+            <i data-lucide="building-2"></i> Unidade Solicitante / Município
+          </label>
+          <select id="solicitanteFilter" class="filter-select">
+            <option value="ALL">Todas as Unidades Solicitantes</option>
+          </select>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="filter-group" style="min-width: 140px;">
+          <button id="resetFiltersBtn" class="btn" style="width: 100%; height: 42px;">
+            <i data-lucide="rotate-ccw"></i> Limpar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Secondary Controls: 180-day Cutoff -->
+      <div class="controls-subrow">
+        <div class="toggles-group">
+          <!-- 180 Days Cutoff Switch -->
+          <label class="toggle-switch-container" title="Aplica a nota de corte de 180 dias especificamente para o cômputo das médias de tempo (isola casos com mais de 180 dias)">
+            <div class="switch">
+              <input type="checkbox" id="cutoff180Toggle" checked>
+              <span class="slider"></span>
+            </div>
+            <div>
+              <span class="toggle-label-text">Nota de Corte de 180 dias (Aplica-se às médias de tempo)</span>
+              <span class="toggle-badge-hint" id="cutoffCountBadge">37 casos não considerados nas médias</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Active Filter Summary -->
+      <div class="active-filters-bar" id="activeFiltersSummary">
+        <span>Filtros ativos:</span>
+        <span class="filter-pill" id="pillPeriod">Período: Todos</span>
+        <span class="filter-pill" id="pillSpecialty">Especialidade: Todas</span>
+        <span class="filter-pill" id="pillSolicitante">Solicitante: Todos</span>
+        <span class="filter-pill" id="pillCutoff">Corte 180d nas Médias: Ativo (isola casos com mais de 180 dias)</span>
+      </div>
+    </section>
+
+    <!-- KPI Summary Grid: 12 Cards (3 Rows of 4 Cards) -->
+    <section class="kpi-grid" aria-label="Indicadores Chave">
+      <!-- LINHA 1: VOLUMETRIA E CONFORMIDADE COM A LEI DOS 60 DIAS (4 CARDS) -->
+
+      <!-- Card 1: Total Cases -->
+      <div class="kpi-card accent-blue">
+        <div class="kpi-header">
+          <span class="kpi-title">Total de Casos</span>
+          <div class="kpi-icon"><i data-lucide="users"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiTotalCases">1.030</div>
+        <div class="kpi-subtext" id="kpiTotalCasesSub">100% dos encaminhamentos</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Da Inserção à Consulta <= 60d -->
+      <div class="kpi-card accent-emerald">
+        <div class="kpi-header">
+          <span class="kpi-title">Da Inserção à Consulta &le; 60d</span>
+          <div class="kpi-icon"><i data-lucide="check-circle-2"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiConsInsLe60Perc">88,9%</div>
+        <div class="kpi-subtext" id="kpiConsInsLe60Count">916 de 1.030 casos (Fila da Regulação)</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiConsInsBar" style="width: 88.9%; background: #10b981;"></div>
+        </div>
+      </div>
+
+      <!-- Card 3: Da Inserção à Consulta > 60d -->
+      <div class="kpi-card accent-rose">
+        <div class="kpi-header">
+          <span class="kpi-title">Da Inserção à Consulta &gt; 60d</span>
+          <div class="kpi-icon"><i data-lucide="alert-triangle"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiConsInsGt60Perc">11,1%</div>
+        <div class="kpi-subtext" id="kpiConsInsGt60Count">114 casos acima de 60 dias</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiConsInsGtBar" style="width: 11.1%; background: #ef4444;"></div>
+        </div>
+      </div>
+
+      <!-- Card 4: Do Diagnóstico à Consulta <= 60d -->
+      <div class="kpi-card accent-cyan">
+        <div class="kpi-header">
+          <span class="kpi-title">Do Diagnóstico à Consulta &le; 60d</span>
+          <div class="kpi-icon"><i data-lucide="shield-check"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiConsDiagLe60Perc">60,9%</div>
+        <div class="kpi-subtext" id="kpiConsDiagLe60Count">618 de 1.015 laudos válidos (Lei nº 12.732/12) (15 sem laudo prévio)</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiConsDiagBar" style="width: 60.9%; background: #06b6d4;"></div>
+        </div>
+      </div>
+
+      <!-- LINHA 2: TEMPOS DE ESPERA — DA INSERÇÃO À CONSULTA (REGULAÇÃO) -->
+
+      <!-- Card 5: Da Inserção à Consulta (MÉDIA) -->
+      <div class="kpi-card accent-amber">
+        <div class="kpi-header">
+          <span class="kpi-title">Da Inserção à Consulta (Média)</span>
+          <div class="kpi-icon"><i data-lucide="clock"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsInsMean">26,6 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitConsInsMeanSub">Tempo médio de 993 casos (corte de 180d)</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitConsInsMeanBar" style="width: 26.6%; background: #f59e0b;"></div>
+        </div>
+      </div>
+
+      <!-- Card 6: Da Inserção à Consulta (MEDIANA P50) -->
+      <div class="kpi-card accent-amber">
+        <div class="kpi-header">
+          <span class="kpi-title">Da Inserção à Consulta (Mediana P50)</span>
+          <div class="kpi-icon"><i data-lucide="timer"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsInsMed">14,0 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitConsInsMedSub">50% atendidos em até 14 dias</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitConsInsMedBar" style="width: 14%; background: #f59e0b;"></div>
+        </div>
+      </div>
+
+      <!-- Card 7: Da Inserção à Consulta (PERCENTIL 75 - P75) -->
+      <div class="kpi-card accent-amber">
+        <div class="kpi-header">
+          <span class="kpi-title">Da Inserção à Consulta (P75)</span>
+          <div class="kpi-icon"><i data-lucide="trending-up"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsInsP75">46,0 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitConsInsP75Sub">75% atendidos em até 46 dias</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitConsInsP75Bar" style="width: 46%; background: #f59e0b;"></div>
+        </div>
+      </div>
+
+      <!-- Card 8: Da Inserção à Consulta (PERCENTIL 90 - P90) -->
+      <div class="kpi-card accent-amber">
+        <div class="kpi-header">
+          <span class="kpi-title">Da Inserção à Consulta (P90)</span>
+          <div class="kpi-icon"><i data-lucide="arrow-up-right"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsInsP90">62,0 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitConsInsP90Sub">90% atendidos em até 62 dias</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitConsInsP90Bar" style="width: 62%; background: #f59e0b;"></div>
+        </div>
+      </div>
+
+      <!-- LINHA 3: TEMPOS DO DIAGNÓSTICO E DISPERSÃO -->
+
+      <!-- Card 9: Do Diagnóstico à Inserção (MÉDIA) -->
+      <div class="kpi-card accent-indigo">
+        <div class="kpi-header">
+          <span class="kpi-title">Do Diagnóstico à Inserção (Média)</span>
+          <div class="kpi-icon"><i data-lucide="arrow-right-left"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitInsDiagMean">27,8 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitInsDiagMeanSub">Município de Origem &bull; Mediana: 18,0d</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitInsDiagMeanBar" style="width: 27.8%; background: #6366f1;"></div>
+        </div>
+      </div>
+
+      <!-- Card 10: Do Diagnóstico à Consulta (MÉDIA TOTAL) -->
+      <div class="kpi-card accent-indigo">
+        <div class="kpi-header">
+          <span class="kpi-title">Do Diagnóstico à Consulta (Média)</span>
+          <div class="kpi-icon"><i data-lucide="hourglass"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsDiagMean">53,8 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitConsDiagMeanSub">Lei Federal nº 12.732/12 &bull; Mediana: 48,0d</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitConsDiagMeanBar" style="width: 53.8%; background: #6366f1;"></div>
+        </div>
+      </div>
+
+      <!-- Card 11: Desvio Padrão -->
+      <div class="kpi-card accent-purple">
+        <div class="kpi-header">
+          <span class="kpi-title">Desvio Padrão (Inserção-Consulta)</span>
+          <div class="kpi-icon"><i data-lucide="activity"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsInsStd">25,0 <span style="font-size: 1.1rem; font-weight: 500;">dias</span></div>
+        <div class="kpi-subtext" id="kpiWaitConsInsStdSub">Dispersão dos tempos na regulação</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" id="kpiWaitConsInsStdBar" style="width: 25%; background: #8b5cf6;"></div>
+        </div>
+      </div>
+
+      <!-- Card 12: Tempos Mínimo e Máximo -->
+      <div class="kpi-card accent-purple">
+        <div class="kpi-header">
+          <span class="kpi-title">Tempo Mínimo e Máximo</span>
+          <div class="kpi-icon"><i data-lucide="gauge"></i></div>
+        </div>
+        <div class="kpi-main-val" id="kpiWaitConsInsMinMax" style="font-size: 1.35rem;">1d a 110d</div>
+        <div class="kpi-subtext" id="kpiWaitConsInsMinMaxSub">Faixa de variação na fila da regulação</div>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" style="width: 100%; background: #8b5cf6;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav" aria-label="Seções do Painel">
+      <button class="tab-btn active" data-tab="tab-overview">
+        <i data-lucide="layout-dashboard"></i> Visão Geral & Jornada
+      </button>
+      <button class="tab-btn" data-tab="tab-periods">
+        <i data-lucide="calendar-range"></i> Comparativo por Período
+      </button>
+      <button class="tab-btn" data-tab="tab-continuous">
+        <i data-lucide="trending-up"></i> Visão Contínua (Mês a Mês)
+      </button>
+      <button class="tab-btn" data-tab="tab-specialties">
+        <i data-lucide="pie-chart"></i> Especialidades
+      </button>
+      <button class="tab-btn" data-tab="tab-solicitantes">
+        <i data-lucide="building"></i> Solicitantes & Municípios
+      </button>
+      <button class="tab-btn" data-tab="tab-suspeicao">
+        <i data-lucide="zap"></i> Alta Suspeição <span class="tab-badge" id="suspeicaoBadgeCount">20</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-table">
+        <i data-lucide="table-2"></i> Tabela Consolidada <span class="tab-badge" id="tableTotalCount">280</span>
+      </button>
+    </nav>
+
+    <!-- Tab 1: Visão Geral & Jornada -->
+    <section id="tab-overview" class="tab-panel active">
+      <div class="callout callout-info">
+        <div class="callout-icon"><i data-lucide="info"></i></div>
+        <div>
+          <strong>Entendendo a Jornada na Regulação RHCCC:</strong> 
+          A jornada é dividida em dois momentos cruciais: (1) <strong>Do Diagnóstico à Inserção</strong> (tempo entre emissão do laudo e cadastro na RHCCC pela unidade municipal) e (2) <strong>Da Inserção à Consulta</strong> (tempo na fila da Central de Regulação).
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Cumprimento do Prazo de 60 Dias</h3>
+              <div class="chart-card-subtitle">Comparativo entre a Fila da Regulação e a Lei Federal nº 12.732/12</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="overviewComplianceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Tempos de Espera nos 3 Intervalos</h3>
+              <div class="chart-card-subtitle">Média e Mediana (P50) lado a lado em dias corridos</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="overviewIntervalsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-top: 1.5rem;">
+        <div class="chart-card-header">
+          <div>
+            <h3 class="chart-card-title">Distribuição de Casos por Faixas de Espera</h3>
+            <div class="chart-card-subtitle">Histograma consolidado dos tempos decorridos até o agendamento</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 280px;">
+          <canvas id="overviewDistributionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Cutoff Impact Table -->
+      <div class="content-card" style="margin-top: 1.5rem;">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <i data-lucide="scale" class="text-accent"></i>
+            <div>
+              <h3 class="card-title">Impacto Metodológico da Nota de Corte de 180 Dias</h3>
+              <div class="card-subtitle">Demonstração da robustez estatística com e sem o corte de valores atípicos (outliers)</div>
+            </div>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="cutoffImpactTable">
+            <thead>
+              <tr>
+                <th>Intervalo Temporal Analisado</th>
+                <th style="text-align: right;">Com Corte (Média)</th>
+                <th style="text-align: right;">Sem Corte (Média)</th>
+                <th style="text-align: right;">Diferença</th>
+                <th style="text-align: right;">Mediana P50</th>
+                <th style="text-align: right;">P75</th>
+                <th style="text-align: right;">P90</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Comparativo por Período -->
+    <section id="tab-periods" class="tab-panel">
+      <div class="callout callout-info">
+        <div class="callout-icon"><i data-lucide="calendar"></i></div>
+        <div>
+          <strong>Análise Comparativa dos Períodos Observados:</strong>
+          Comparativo cronológico entre os blocos de atendimento para avaliar a evolução da conformidade da regulação ao longo do tempo.
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Evolução do Volume e Conformidade por Período</h3>
+              <div class="chart-card-subtitle">Percentual de casos atendidos em até 60 dias</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="periodTrendChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Tempos Médios de Espera por Período</h3>
+              <div class="chart-card-subtitle">Comparativo de tempo na Central de Regulação RHCCC</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="periodComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Period Summary Table -->
+      <div class="content-card" style="margin-top: 1.5rem;">
+        <div class="content-card-header">
+          <h3 class="card-title">Tabela Síntese dos Períodos</h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="periodSummaryTable" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Período</th>
+                <th style="text-align: right;">Total de Casos</th>
+                <th style="text-align: right;">% &le; 60d (Regulação)</th>
+                <th style="text-align: right;">Média Inserção &rarr; Consulta</th>
+                <th style="text-align: right;">Mediana P50</th>
+                <th style="text-align: right;">Alta Suspeição</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Specialty x Period Matrix -->
+      <div class="content-card" style="margin-top: 1.5rem;">
+        <div class="content-card-header">
+          <h3 class="card-title">Matriz: Especialidades &times; Períodos</h3>
+          <div class="card-subtitle">Volume e tempo médio na regulação por especialidade em cada período</div>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="specialtyPeriodBoardTable" style="width: 100%;">
+            <thead>
+              <!-- Populated dynamically via app.js -->
+            </thead>
+            <tbody>
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: Visão Contínua (Mês a Mês) -->
+    <section id="tab-continuous" class="tab-panel">
+      <div class="callout callout-info">
+        <div class="callout-icon"><i data-lucide="trending-up"></i></div>
+        <div>
+          <strong>Série Temporal Contínua Mês a Mês:</strong>
+          Acompanhamento cronológico mensal da volumetria de consultas e do tempo médio de espera na regulação.
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Volume e Média Mensal de Espera</h3>
+              <div class="chart-card-subtitle">Evolução dos encaminhamentos ao longo dos meses</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 300px;">
+            <canvas id="continuousMonthlyChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Curva Cumulativa de Atendimentos</h3>
+              <div class="chart-card-subtitle">Evolução do acumulado histórico de casos regulados</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 300px;">
+            <canvas id="continuousCumulChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Especialidades -->
+    <section id="tab-specialties" class="tab-panel">
+      <div class="callout callout-info">
+        <div class="callout-icon"><i data-lucide="stethoscope"></i></div>
+        <div>
+          <strong>Mapeamento por Especialidade Oncológica:</strong>
+          Identificação das especialidades com maior demanda e verificação do tempo médio e conformidade com os prazos legais.
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Volume por Especialidade</h3>
+              <div class="chart-card-subtitle">Distribuição dos casos encaminhados</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 320px;">
+            <canvas id="specialtiesVolumeChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Tempo Médio de Espera (Dias)</h3>
+              <div class="chart-card-subtitle">Média da Inserção à Consulta por especialidade</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 320px;">
+            <canvas id="specialtiesWaitChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-top: 1.5rem;">
+        <div class="chart-card-header">
+          <div>
+            <h3 class="chart-card-title">Taxa de Conformidade (&le; 60 dias) por Especialidade</h3>
+            <div class="chart-card-subtitle">Percentual de cumprimento dos prazos em cada área oncológica</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 280px;">
+          <canvas id="specialtiesComplianceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Specialties Summary Table -->
+      <div class="content-card" style="margin-top: 1.5rem;">
+        <div class="content-card-header">
+          <h3 class="card-title">Indicadores Agregados por Especialidade</h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="specialtiesTable">
+            <thead>
+              <tr>
+                <th>Especialidade</th>
+                <th style="text-align: right;">Total de Casos</th>
+                <th style="text-align: right;">% &le; 60d (Regulação)</th>
+                <th style="text-align: right;">Média Inserção &rarr; Consulta</th>
+                <th style="text-align: right;">Mediana Inserção &rarr; Consulta</th>
+                <th style="text-align: right;">Média Diagnóstico &rarr; Consulta</th>
+                <th style="text-align: right;">Mediana Diagnóstico &rarr; Consulta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 5: Solicitantes & Municípios -->
+    <section id="tab-solicitantes" class="tab-panel">
+      <div class="callout callout-info">
+        <div class="callout-icon"><i data-lucide="building-2"></i></div>
+        <div>
+          <strong>Desempenho das Unidades Solicitantes & Municípios:</strong>
+          Comparativo entre Serviços de Referência (AME Franca, Santa Casa Franca, AME Ituverava) e Secretarias Municipais de Saúde (SMS).
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Ranking de Volume por Solicitante</h3>
+              <div class="chart-card-subtitle">Principais portas de entrada do fluxo oncológico</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 340px;">
+            <canvas id="solicitantesVolumeChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Tempo Médio na Regulação por Solicitante</h3>
+              <div class="chart-card-subtitle">Média em dias da inserção até a realização da consulta</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 340px;">
+            <canvas id="solicitantesWaitChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Solicitantes Table -->
+      <div class="content-card" style="margin-top: 1.5rem;">
+        <div class="content-card-header">
+          <h3 class="card-title">Tabela por Unidade Solicitante</h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="solicitantesTable">
+            <thead>
+              <tr>
+                <th>Unidade Solicitante / Município</th>
+                <th style="text-align: right;">Total de Casos</th>
+                <th style="text-align: right;">% &le; 60d (Regulação)</th>
+                <th style="text-align: right;">Média Inserção &rarr; Consulta</th>
+                <th style="text-align: right;">Mediana P50</th>
+                <th style="text-align: right;">Alta Suspeição</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 6: Alta Suspeição & Laudos -->
+    <section id="tab-suspeicao" class="tab-panel">
+      <div class="callout callout-purple">
+        <div class="callout-icon"><i data-lucide="zap"></i></div>
+        <div>
+          <strong>Protocolo de Alta Suspeição / Fast Track (20 Casos - 1,94% da base):</strong>
+          Em oncologia, pacientes com forte suspeita clínica são inseridos na regulação antes da emissão definitiva da biópsia/laudo patológico para agilizar o primeiro atendimento especializado.
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Situação do Laudo Patológico na Inserção</h3>
+              <div class="chart-card-subtitle">Casos com laudo prévio versus casos em alta suspeição</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="suspeicaoBreakdownChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">Impacto da Alta Suspeição no Tempo de Espera</h3>
+              <div class="chart-card-subtitle">Comparativo de tempo na fila da regulação (em dias)</div>
+            </div>
+          </div>
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="suspeicaoImpactChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suspeição Table -->
+      <div class="content-card" style="margin-top: 1.5rem;">
+        <div class="content-card-header">
+          <h3 class="card-title">Detalhamento dos Indicadores por Situação do Laudo</h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="suspeicaoTable">
+            <thead>
+              <tr>
+                <th>Classificação do Atendimento</th>
+                <th style="text-align: right;">Total de Casos</th>
+                <th style="text-align: right;">% da Base</th>
+                <th style="text-align: right;">Média Inserção &rarr; Consulta</th>
+                <th style="text-align: right;">Mediana P50</th>
+                <th style="text-align: right;">% &le; 60d (Regulação)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 7: Tabela Consolidada (LGPD / Estatística) -->
+    <section id="tab-table" class="tab-panel">
+      <div class="content-card">
+        <div class="content-card-header" style="flex-wrap: wrap; gap: 1rem;">
+          <div class="card-title-group">
+            <i data-lucide="database" class="text-accent"></i>
+            <div>
+              <h2 class="card-title">Tabela Estatística Consolidada</h2>
+              <div class="card-subtitle">Agrupamento estatístico por Especialidade, Município e Período (100% anonimizado em conformidade com a LGPD)</div>
+            </div>
+          </div>
+          <div class="table-actions" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <div class="search-input-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="tableSearchInput" class="search-input" placeholder="Buscar por município ou especialidade..." aria-label="Buscar na tabela">
+            </div>
+            <button id="tableExportCsvBtn" class="btn btn-sm btn-primary">
+              <i data-lucide="download"></i> Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table" id="mainDataTable">
+            <thead>
+              <tr>
+                <th data-sort="especialidade" style="cursor: pointer;">Especialidade <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="unidade_solicitante" style="cursor: pointer;">Município / Unidade Solicitante <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="periodo" style="cursor: pointer;">Período <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="total_casos" style="text-align: right; cursor: pointer;">Casos <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="cons_ins_le_60_perc" style="text-align: right; cursor: pointer;">% &le; 60d (Regulação) <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="media_cons_ins" style="text-align: right; cursor: pointer;">Média (dias) <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="mediana_cons_ins" style="text-align: right; cursor: pointer;">Mediana (dias) <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+                <th data-sort="alta_suspeicao_count" style="text-align: right; cursor: pointer;">Alta Suspeição <i data-lucide="arrow-up-down" style="width: 14px; height: 14px; vertical-align: middle;"></i></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="table-pagination">
+          <div class="pagination-info" id="tableRecordCount">Mostrando 1 a 15 registros</div>
+          <div class="pagination-controls">
+            <button id="prevPageBtn" class="btn btn-sm btn-icon" title="Página Anterior">
+              <i data-lucide="chevron-left"></i>
+            </button>
+            <span class="pagination-page-indicator" id="tablePageIndicator">1 de 19</span>
+            <button id="nextPageBtn" class="btn btn-sm btn-icon" title="Próxima Página">
+              <i data-lucide="chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Technical Report Modal (Formal Legal Notice / PAA) -->
+  <div id="relatorioModal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 900px; padding: 2.5rem; background: #ffffff; color: #1e293b;" id="reportPrintArea">
+      
+      <!-- Top Action Bar (hidden in print) -->
+      <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+        <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">
+          <i data-lucide="file-check" style="display: inline-block; vertical-align: middle;"></i> Relatório Técnico para Registro em Autos
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="printRelatorioBtn" class="btn btn-primary btn-sm">
+            <i data-lucide="printer"></i> Imprimir / Salvar PDF
+          </button>
+          <button id="copyRelatorioBtn" class="btn btn-sm" style="background: #f1f5f9; color: #334155;">
+            <i data-lucide="copy"></i> Copiar Texto
+          </button>
+          <button id="closeRelatorioBtn" class="btn btn-sm" style="background: #fee2e2; color: #ef4444; border-color: #fca5a5;">
+            <i data-lucide="x"></i> Fechar
+          </button>
+        </div>
+      </div>
+
+      <!-- Formal MP Letterhead -->
+      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 1.25rem; margin-bottom: 1.75rem;">
+        <div style="font-size: 1.15rem; font-weight: 800; letter-spacing: 0.05em; color: #0f172a; text-transform: uppercase;">
+          MINISTÉRIO PÚBLICO DO ESTADO DE SÃO PAULO
+        </div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: #334155; margin-top: 0.25rem;">
+          PROMOTORIA DE JUSTIÇA DE DEFESA DA SAÚDE PÚBLICA
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">
+          NÚCLEO REGIONAL DE ASSESSORIA TÉCNICA E FISCALIZAÇÃO SANITÁRIA
+        </div>
+      </div>
+
+      <!-- Report Metadata Header Box -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1.25rem; margin-bottom: 2rem; font-size: 0.9rem; line-height: 1.6;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div><strong>INSTRUMENTO:</strong> Procedimento Administrativo / Inquérito Civil</div>
+          <div><strong>DATA DE EMISSÃO:</strong> <span id="repEmissionDate">01/10/2026</span></div>
+          <div><strong>OBJETO:</strong> Fiscalização da Lei Federal nº 12.732/2012</div>
+          <div><strong>SISTEMA REGULADOR:</strong> Central RHCCC - DRS Franca / SP</div>
+          <div><strong>AMOSTRA CONSOLIDADA:</strong> <span id="repTotalCases">1.030 casos cadastrados</span></div>
+          <div><strong>LAUDOS PRÉVIOS VÁLIDOS:</strong> <span id="repValidDiagCases">1.015 laudos (15 sem laudo prévio)</span></div>
+        </div>
+      </div>
+
+      <!-- Body Content -->
+      <div id="relatorioBodyText" style="font-size: 0.95rem; line-height: 1.7; color: #1e293b; text-align: justify;">
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 1rem;">
+          1. SÍNTESE DA SITUAÇÃO DA REGULAÇÃO (FILA DA CENTRAL RHCCC)
+        </h4>
+        <p>
+          Verifica-se, a partir da análise da base consolidada, que o tempo mediano decorrido entre o agendamento no sistema e a realização da primeira consulta foi de <strong>14 dias</strong>. A taxa de conformidade interna da central alcançou <strong>88,9%</strong> de cumprimento do teto legal de 60 dias.
+        </p>
+
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-top: 1.75rem; margin-bottom: 1rem;">
+          2. CUMPRIMENTO DO MARCO LEGAL GLOBAL (LEI FEDERAL Nº 12.732/2012)
+        </h4>
+        <p>
+          Considerando o lapso temporal integral desde a data de emissão do laudo diagnóstico (biópsia/anatomopatológico) até a consulta especializada, apurou-se que <strong>60,9%</strong> dos pacientes (618 de 1.015 laudos válidos) foram atendidos dentro do limite legal de 60 dias. O tempo médio total sob nota de corte metodológica foi de <strong>53,8 dias</strong> (mediana de 48 dias).
+        </p>
+
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-top: 1.75rem; margin-bottom: 1rem;">
+          3. OBSERVAÇÕES SOBRE PROTEÇÃO DE DADOS (LGPD)
+        </h4>
+        <p>
+          Em estrito cumprimento à Lei Geral de Proteção de Dados (Lei nº 13.709/2018) e às diretrizes deontológicas de sigilo em saúde pública, este relatório é embasado em dados sumarizados e consolidados, resguardando o anonimato de todos os usuários do Sistema Único de Saúde (SUS).
+        </p>
+      </div>
+
+      <div style="margin-top: 3rem; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 1.5rem; font-size: 0.85rem; color: #64748b;">
+        MINISTÉRIO PÚBLICO DO ESTADO DE SÃO PAULO &bull; RELATÓRIO TÉCNICO GERADO AUTOMATICAMENTE
+      </div>
+    </div>
+  </div>
+
+  <!-- Anonymous Statistical Data -->
+  <script src="dados_estatisticos.js"></script>
+
+  <!-- Dashboard Controller -->
+  <script src="app.js"></script>
+</body>
+</html>
